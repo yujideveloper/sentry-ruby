@@ -200,6 +200,27 @@ module Sentry
                            nil
                          end
 
+      thread_file = File.new('/Users/neel/thread_count', 'w')
+      thread_file.write("INIT STATE\n")
+      thread_file.write("#{'-' * 20}\n")
+      thread_file.write("total count: #{Thread.list.count}\n")
+      flusher_count = Thread.list.count { |t| t.to_s =~ /session_flusher/ }
+      thread_file.write("flusher count: #{flusher_count}\n")
+      thread_file.write("#{'-' * 20}\n")
+      thread_file.flush
+
+      thread_counter = Thread.new do
+        loop do
+          sleep(10)
+          thread_file.write("#{'-' * 20}\n")
+          thread_file.write("total count: #{Thread.list.count}\n")
+          flusher_count = Thread.list.count { |t| t.to_s =~ /session_flusher/ }
+          thread_file.write("flusher count: #{flusher_count}\n")
+          thread_file.write("#{'-' * 20}\n")
+          thread_file.flush
+        end
+      end
+
       if config.capture_exception_frame_locals
         exception_locals_tp.enable
       end
@@ -207,6 +228,15 @@ module Sentry
       at_exit do
         @session_flusher&.kill
         @background_worker.shutdown
+        thread_counter.kill
+
+        thread_file.write("EXIT STATE\n")
+        thread_file.write("#{'-' * 20}\n")
+        thread_file.write("total count: #{Thread.list.count}\n")
+        flusher_count = Thread.list.count { |t| t.to_s =~ /session_flusher/ }
+        thread_file.write("flusher count: #{flusher_count}\n")
+        thread_file.write("#{'-' * 20}\n")
+        thread_file.close
       end
     end
 
