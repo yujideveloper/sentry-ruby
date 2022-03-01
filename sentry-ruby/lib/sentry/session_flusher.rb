@@ -4,7 +4,7 @@ module Sentry
   class SessionFlusher
     include LoggingHelper
 
-    FLUSH_INTERVAL = 60
+    FLUSH_INTERVAL = 10
 
     def initialize(configuration, client)
       @thread = nil
@@ -18,6 +18,8 @@ module Sentry
     end
 
     def flush
+      raise 'Oops in thread' if [true, false, false, false].sample
+
       return if @pending_aggregates.empty?
       envelope = pending_envelope
 
